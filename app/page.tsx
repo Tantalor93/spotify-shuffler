@@ -21,7 +21,6 @@ export default function Page() {
   const handleLogout = () => {
     if (typeof window === 'undefined') return;
 
-    // Smaže tokeny/metadata uložené Spotify SDK
     for (const storage of [window.localStorage, window.sessionStorage]) {
       const keysToRemove: string[] = [];
       for (let i = 0; i < storage.length; i++) {

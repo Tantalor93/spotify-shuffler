@@ -11,9 +11,7 @@ interface Props {
 export default function PlaylistCard({ playlist, onShuffle }: Props) {
   const [shuffling, setShuffling] = useState(false);
 
-
-  // For some reason SDK expects `track` field, but in reality it is returned as `items`
-  // https://developer.spotify.com/documentation/web-api/reference/get-playlists-items
+  // TODO handle this so the build does not fail
   const tracksTotal = playlist.tracks?.total ?? playlist.items?.total ?? 0;
 
 
