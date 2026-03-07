@@ -10,13 +10,20 @@ export default function Page() {
 
   useEffect(() => {
     if (!sdk) return;
-    
-    sdk.getAccessToken().then((token) => {
-      userPlaylists(token?.access_token ?? '').then((pls) => {
-        setPlaylists(pls);
-      });
-    });
-    
+
+    const loadPlaylists = async () => {
+      let accessToken = await sdk.getAccessToken();
+      if (!accessToken) {
+        const resp = await sdk.authenticate();
+        accessToken = resp.accessToken;
+      }
+
+      const pls = await userPlaylists(accessToken.access_token);
+      setPlaylists(pls);
+    };
+
+    loadPlaylists();
+
   }, [sdk]);
 
   const handleLogout = () => {
