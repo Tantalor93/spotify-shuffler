@@ -1,19 +1,20 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { getSpotifySDK, shuffleArray, fetchAllPlaylistTrackUris, updatePlayList } from '@/app/lib/spotify';
-import { SimplifiedPlaylist } from '@spotify/web-api-ts-sdk';
+import { getSpotifySDK, shuffleArray, fetchAllPlaylistTrackUris, updatePlayList, userPlaylists, PlayList } from '@/app/lib/spotify';
 import PlaylistCard from '@/app/ui/playlists/playlist-card';
 
 export default function Page() {
-  const [playlists, setPlaylists] = useState<SimplifiedPlaylist[]>([]);
+  const [playlists, setPlaylists] = useState<PlayList[]>([]);
   const sdk = useMemo(() => getSpotifySDK(), []);
 
   useEffect(() => {
     if (!sdk) return;
     
-    sdk.currentUser.playlists.playlists().then((data) => {
-      setPlaylists(data.items);
+    sdk.getAccessToken().then((token) => {
+      userPlaylists(token?.access_token ?? '').then((pls) => {
+        setPlaylists(pls);
+      });
     });
     
   }, [sdk]);

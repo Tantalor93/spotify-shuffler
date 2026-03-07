@@ -1,19 +1,18 @@
 'use client';
 
-import { SimplifiedPlaylist } from "@spotify/web-api-ts-sdk";
+import { PlayList } from '@/app/lib/spotify';
+
 import { useState } from "react";
 
 interface Props {
-  playlist: SimplifiedPlaylist;
+  playlist: PlayList;
   onShuffle: (id: string) => Promise<void>;
 }
 
 export default function PlaylistCard({ playlist, onShuffle }: Props) {
   const [shuffling, setShuffling] = useState(false);
 
-  // TODO handle this so the build does not fail
-  const tracksTotal = playlist.tracks?.total ?? playlist.items?.total ?? 0;
-
+  const tracksTotal = playlist.items.total;
 
   const handleAction = async () => {
     setShuffling(true);

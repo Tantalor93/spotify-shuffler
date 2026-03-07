@@ -8,6 +8,17 @@ type PlaylistItemsPage = {
     total: number;
 };
 
+export type PlayList = {
+    id: string;
+    name: string;
+    items: { total: string };
+}
+
+type PlayListPage = {
+    total: number;
+    items: Array<PlayList>;
+}
+
 export const getSpotifySDK = () => {
     if (typeof window === "undefined") return null;
 
@@ -112,4 +123,38 @@ export async function updatePlayList(playlistId: string, trackUris: string[], ac
 
         offset += chunk.length
     }
+}
+
+
+export async function userPlaylists(accessToken: string): Promise<PlayList[]> {
+    const limit = 20;
+    let offset = 0;
+    let total = Infinity;
+    const allItems: Array<PlayList> = [];
+
+    while (offset < total) {
+        const res = await fetch(
+            `https://api.spotify.com/v1/me/playlists?limit=${limit}&offset=${offset}`,
+            {
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                },
+            }
+        );
+
+        if (!res.ok) {
+            const body = await res.text();
+            throw new Error(`Spotify ${res.status}: ${body}`);
+        }
+
+        const page: PlayListPage = await res.json();
+        allItems.push(...page.items);
+        total = page.total;
+        offset += page.items.length;
+
+        if (page.items.length === 0) break;
+    }
+
+
+    return allItems
 }
