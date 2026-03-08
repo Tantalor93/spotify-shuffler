@@ -1,29 +1,38 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { getSpotifySDK, shuffleArray, fetchAllPlaylistTrackUris, updatePlayList, userPlaylists, PlayList } from '@/app/lib/spotify';
+import { getSpotifySDK, userPlaylists, PlayList } from '@/app/lib/spotify';
+import { shufflePlaylistAction } from '@/app/actions/shuffle-playlist';
 import PlaylistCard from '@/app/ui/playlists/playlist-card';
 
 export default function Page() {
   const [playlists, setPlaylists] = useState<PlayList[]>([]);
   const sdk = useMemo(() => getSpotifySDK(), []);
 
+  const getAccessTokenOrAuthenticate = async (): Promise<string | null> => {
+    if (!sdk) return null;
+
+    let token = await sdk.getAccessToken();
+    if (!token?.access_token) {
+      const resp = await sdk.authenticate();
+      token = resp.accessToken;
+    }
+
+    return token?.access_token ?? null;
+  };
+
   useEffect(() => {
     if (!sdk) return;
 
     const loadPlaylists = async () => {
-      let accessToken = await sdk.getAccessToken();
-      if (!accessToken) {
-        const resp = await sdk.authenticate();
-        accessToken = resp.accessToken;
-      }
+      const accessToken = await getAccessTokenOrAuthenticate();
+      if (!accessToken) return;
 
-      const pls = await userPlaylists(accessToken.access_token);
+      const pls = await userPlaylists(accessToken);
       setPlaylists(pls);
     };
 
     loadPlaylists();
-
   }, [sdk]);
 
   const handleLogout = () => {
@@ -45,19 +54,15 @@ export default function Page() {
   };
 
   const handleShuffle = async (id: string) => {
-    if (!sdk) return;
-
     try {
-      const token = await sdk.getAccessToken()
+      const accessToken = await getAccessTokenOrAuthenticate();
+      if (!accessToken) return;
 
-      const trackUris = await fetchAllPlaylistTrackUris(id, token?.access_token ?? '');
+      console.log('access token obtained, shuffling playlist', accessToken);
 
-      const shuffledUris = shuffleArray(trackUris);
-
-      await updatePlayList(id, shuffledUris, token?.access_token ?? '');
-
+      await shufflePlaylistAction(id, accessToken);
     } catch (error) {
-      console.error("Shuffle failed:", error);
+      console.error('Shuffle failed:', error);
     }
   };
 
