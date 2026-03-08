@@ -2,7 +2,12 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { getSpotifySDK} from '@/app/lib/spotify';
-import { PlayList, shufflePlaylistAction, listUserPlaylistsAction } from '@/app/actions/spotify';
+import {
+  PlayList,
+  shufflePlaylistAction,
+  listUserPlaylistsAction,
+  unfollowPlaylistAction,
+} from '@/app/actions/spotify';
 import PlaylistCard from '@/app/ui/playlists/playlist-card';
 
 export default function Page() {
@@ -64,6 +69,18 @@ export default function Page() {
     }
   };
 
+  const handleUnfollow = async (playlist: PlayList) => {
+    try {
+      const accessToken = await getAccessTokenOrAuthenticate();
+      if (!accessToken) return;
+
+      await unfollowPlaylistAction(playlist.uri, accessToken);
+      setPlaylists((prev) => prev.filter((p) => p.id !== playlist.id));
+    } catch (error) {
+      console.error('Unfollow failed:', error);
+    }
+  };
+
   return (
     <main className="max-w-2xl mx-auto p-6">
       <div className="mb-6 flex items-center justify-between">
@@ -82,6 +99,7 @@ export default function Page() {
             key={pl.id}
             playlist={pl}
             onShuffle={handleShuffle}
+            onUnfollow={() => handleUnfollow(pl)}
           />
         ))}
       </div>

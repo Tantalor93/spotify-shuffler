@@ -3,35 +3,45 @@
 import { PlayList } from "@/app/actions/spotify";
 import { useState } from "react";
 
-interface Props {
-  playlist: PlayList;
-  onShuffle: (id: string) => Promise<void>;
-}
+type Props = {
+    playlist: PlayList;
+    onShuffle: (id: string) => void | Promise<void>;
+    onUnfollow?: () => void | Promise<void>;
+};
 
-export default function PlaylistCard({ playlist, onShuffle }: Props) {
-  const [shuffling, setShuffling] = useState(false);
+export default function PlaylistCard({ playlist, onShuffle, onUnfollow }: Props) {
+    const [shuffling, setShuffling] = useState(false);
 
-  const tracksTotal = playlist.items.total;
+    const tracksTotal = playlist.items.total;
 
-  const handleAction = async () => {
-    setShuffling(true);
-    await onShuffle(playlist.id);
-    setShuffling(false);
-  };
+    const handleAction = async () => {
+        setShuffling(true);
+        await onShuffle(playlist.id);
+        setShuffling(false);
+    };
 
-  return (
-    <div className="flex items-center justify-between p-4 rounded-xl bg-gray-900 border border-gray-800 hover:border-green-500 transition-colors">
-      <div>
-        <h3 className="font-bold text-white">{playlist.name}</h3>
-        <p className="text-sm text-gray-400">{tracksTotal} tracks</p>
-      </div>
-      <button
-        onClick={handleAction}
-        disabled={shuffling}
-        className="px-4 py-2 bg-green-500 text-black font-bold rounded-full hover:scale-105 transition disabled:opacity-50"
-      >
-        {shuffling ? 'Shuffling...' : 'Shuffle'}
-      </button>
-    </div>
-  );
+    return (
+        <div className="flex items-center justify-between p-4 rounded-xl bg-gray-900 border border-gray-800 hover:border-green-500 transition-colors">
+            <div>
+                <h3 className="font-bold text-white">{playlist.name}</h3>
+                <p className="text-sm text-gray-400">{tracksTotal} tracks</p>
+            </div>
+            <div className="mt-3 flex gap-2">
+                <button
+                    onClick={handleAction}
+                    disabled={shuffling}
+                    className="rounded-full bg-green-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-green-400 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                    {shuffling ? 'Shuffling…' : 'Shuffle'}
+                </button>
+
+                <button
+                    onClick={onUnfollow}
+                    className="rounded-full border border-red-500 px-4 py-2 text-sm font-semibold text-red-400 transition hover:bg-red-500/10"
+                >
+                    Unfollow
+                </button>
+            </div>
+        </div>
+    );
 }

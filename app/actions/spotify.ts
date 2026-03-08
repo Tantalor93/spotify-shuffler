@@ -15,6 +15,7 @@ type PlaylistItemsPage = {
 export type PlayList = {
     id: string;
     name: string;
+    uri: string;
     items: { total: number };
 }
 
@@ -89,10 +90,16 @@ async function replacePlaylistTracks(playlistId: string, trackUris: string[], ac
 }
 
 export async function shufflePlaylistAction(playlistId: string, accessToken: string) {
+    console.log(`Shuffling playlist ${playlistId}`);
+
     const uris = await fetchAllPlaylistTrackUris(playlistId, accessToken);
+    console.debug(`Fetched playlist ${playlistId} track URIs:`, uris);
+
     const shuffled = shuffleArray(uris);
     await replacePlaylistTracks(playlistId, shuffled, accessToken);
     revalidatePath('/');
+    
+    console.log(`Finished shuffling playlist ${playlistId}`);
 }
 
 export async function listUserPlaylistsAction(accessToken: string): Promise<PlayList[]> {
@@ -128,3 +135,19 @@ export async function listUserPlaylistsAction(accessToken: string): Promise<Play
     return allItems
 }
 
+export async function unfollowPlaylistAction(playlistUri: string, accessToken: string) {
+      const res = await fetch(
+            `https://api.spotify.com/v1/me/library?uris=${encodeURIComponent(playlistUri)}`,
+            {
+                method: 'DELETE',
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                },
+            }
+        );
+
+        if (!res.ok) {
+            const body = await res.text();
+            throw new Error(`Spotify ${res.status}: ${body}`);
+        }
+}
