@@ -1,7 +1,6 @@
 'use client';
 
-import { PlayList } from '@/app/lib/spotify';
-
+import { PlayList } from "@/app/actions/spotify";
 import { useState } from "react";
 
 interface Props {

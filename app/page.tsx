@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { getSpotifySDK, userPlaylists, PlayList } from '@/app/lib/spotify';
-import { shufflePlaylistAction } from '@/app/actions/shuffle-playlist';
+import { getSpotifySDK} from '@/app/lib/spotify';
+import { PlayList, shufflePlaylistAction, listUserPlaylistsAction } from '@/app/actions/spotify';
 import PlaylistCard from '@/app/ui/playlists/playlist-card';
 
 export default function Page() {
@@ -28,7 +28,7 @@ export default function Page() {
       const accessToken = await getAccessTokenOrAuthenticate();
       if (!accessToken) return;
 
-      const pls = await userPlaylists(accessToken);
+      const pls = await listUserPlaylistsAction(accessToken);
       setPlaylists(pls);
     };
 
@@ -57,8 +57,6 @@ export default function Page() {
     try {
       const accessToken = await getAccessTokenOrAuthenticate();
       if (!accessToken) return;
-
-      console.log('access token obtained, shuffling playlist', accessToken);
 
       await shufflePlaylistAction(id, accessToken);
     } catch (error) {
