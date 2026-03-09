@@ -2,6 +2,8 @@
 
 import { revalidatePath } from 'next/cache';
 import { shuffleArray } from '@/app/lib/spotify';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
 type PlaylistItem = {
     item: { uri: string }
@@ -22,6 +24,17 @@ export type PlayList = {
 type PlayListPage = {
     total: number;
     items: Array<PlayList>;
+}
+
+async function requireSpotifyAccessToken(): Promise<string> {
+    const session = await getServerSession(authOptions);
+    const accessToken = session?.accessToken;
+
+    if (!accessToken) {
+        throw new Error('Not authenticated with Spotify.');
+    }
+
+    return accessToken;
 }
 
 async function fetchAllPlaylistTrackUris(playlistId: string, accessToken: string): Promise<string[]> {
@@ -89,8 +102,10 @@ async function replacePlaylistTracks(playlistId: string, trackUris: string[], ac
     }
 }
 
-export async function shufflePlaylistAction(playlistId: string, accessToken: string) {
+export async function shufflePlaylistAction(playlistId: string) {
     console.log(`Shuffling playlist ${playlistId}`);
+
+    const accessToken = await requireSpotifyAccessToken();
 
     const uris = await fetchAllPlaylistTrackUris(playlistId, accessToken);
 
@@ -101,7 +116,9 @@ export async function shufflePlaylistAction(playlistId: string, accessToken: str
     console.log(`Finished shuffling playlist ${playlistId}`);
 }
 
-export async function listUserPlaylistsAction(accessToken: string): Promise<PlayList[]> {
+export async function listUserPlaylistsAction(): Promise<PlayList[]> {
+    const accessToken = await requireSpotifyAccessToken();
+
     const limit = 20;
     let offset = 0;
     let total = Infinity;
@@ -134,7 +151,9 @@ export async function listUserPlaylistsAction(accessToken: string): Promise<Play
     return allItems
 }
 
-export async function unfollowPlaylistAction(playlistUri: string, accessToken: string) {
+export async function unfollowPlaylistAction(playlistUri: string) {
+    const accessToken = await requireSpotifyAccessToken();
+
       const res = await fetch(
             `https://api.spotify.com/v1/me/library?uris=${encodeURIComponent(playlistUri)}`,
             {

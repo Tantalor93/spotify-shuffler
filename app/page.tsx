@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { getSpotifySDK} from '@/app/lib/spotify';
+import { useEffect, useState } from 'react';
+import { signIn, signOut, useSession } from 'next-auth/react';
 import {
   PlayList,
   shufflePlaylistAction,
@@ -11,59 +11,39 @@ import {
 import PlaylistCard from '@/app/ui/playlists/playlist-card';
 
 export default function Page() {
+  const { data: session, status } = useSession();
   const [playlists, setPlaylists] = useState<PlayList[]>([]);
-  const sdk = useMemo(() => getSpotifySDK(), []);
-
-  const getAccessTokenOrAuthenticate = async (): Promise<string | null> => {
-    if (!sdk) return null;
-
-    let token = await sdk.getAccessToken();
-    if (!token?.access_token) {
-      const resp = await sdk.authenticate();
-      token = resp.accessToken;
-    }
-
-    return token?.access_token ?? null;
-  };
+  const accessToken = session?.accessToken;
 
   useEffect(() => {
-    if (!sdk) return;
+    if (status !== 'authenticated' || !accessToken) {
+      return;
+    }
 
     const loadPlaylists = async () => {
-      const accessToken = await getAccessTokenOrAuthenticate();
-      if (!accessToken) return;
-
-      const pls = await listUserPlaylistsAction(accessToken);
-      setPlaylists(pls);
+      try {
+        const pls = await listUserPlaylistsAction();
+        setPlaylists(pls);
+      } catch (error) {
+        console.error('Loading playlists failed:', error);
+      }
     };
 
     loadPlaylists();
-  }, [sdk]);
+  }, [status, accessToken]);
 
   const handleLogout = () => {
-    if (typeof window === 'undefined') return;
-
-    for (const storage of [window.localStorage, window.sessionStorage]) {
-      const keysToRemove: string[] = [];
-      for (let i = 0; i < storage.length; i++) {
-        const key = storage.key(i);
-        if (!key) continue;
-        if (key.toLowerCase().includes('spotify')) {
-          keysToRemove.push(key);
-        }
-      }
-      keysToRemove.forEach((key) => storage.removeItem(key));
-    }
-
-    window.location.reload();
+    void signOut({ callbackUrl: '/' });
   };
 
   const handleShuffle = async (id: string) => {
     try {
-      const accessToken = await getAccessTokenOrAuthenticate();
-      if (!accessToken) return;
+      if (!accessToken) {
+        await signIn('spotify');
+        return;
+      }
 
-      await shufflePlaylistAction(id, accessToken);
+      await shufflePlaylistAction(id);
     } catch (error) {
       console.error('Shuffle failed:', error);
     }
@@ -71,15 +51,56 @@ export default function Page() {
 
   const handleUnfollow = async (playlist: PlayList) => {
     try {
-      const accessToken = await getAccessTokenOrAuthenticate();
-      if (!accessToken) return;
+      if (!accessToken) {
+        await signIn('spotify');
+        return;
+      }
 
-      await unfollowPlaylistAction(playlist.uri, accessToken);
+      await unfollowPlaylistAction(playlist.uri);
       setPlaylists((prev) => prev.filter((p) => p.id !== playlist.id));
     } catch (error) {
       console.error('Unfollow failed:', error);
     }
   };
+
+  if (status === 'loading') {
+    return (
+      <main className="max-w-2xl mx-auto p-6">
+        <p>Loading session…</p>
+      </main>
+    );
+  }
+
+  if (status !== 'authenticated') {
+    return (
+      <main className="max-w-2xl mx-auto p-6">
+        <div className="rounded-xl border border-gray-800 bg-gray-900 p-6">
+          <h1 className="text-3xl font-bold">My Playlists</h1>
+          <p className="mt-3 text-sm text-gray-400">Sign in to load your Spotify playlists.</p>
+          <button
+            onClick={() => void signIn('spotify')}
+            className="mt-4 rounded-full bg-green-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-green-400"
+          >
+            Sign in with Spotify
+          </button>
+        </div>
+      </main>
+    );
+  }
+
+  if (!accessToken) {
+    return (
+      <main className="max-w-2xl mx-auto p-6">
+        <p className="text-sm text-gray-400">Missing Spotify access token in session.</p>
+        <button
+          onClick={() => void signIn('spotify')}
+          className="mt-4 rounded-full bg-green-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-green-400"
+        >
+          Reconnect Spotify
+        </button>
+      </main>
+    );
+  }
 
   return (
     <main className="max-w-2xl mx-auto p-6">
