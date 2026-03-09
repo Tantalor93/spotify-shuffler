@@ -93,7 +93,6 @@ export async function shufflePlaylistAction(playlistId: string, accessToken: str
     console.log(`Shuffling playlist ${playlistId}`);
 
     const uris = await fetchAllPlaylistTrackUris(playlistId, accessToken);
-    console.debug(`Fetched playlist ${playlistId} track URIs:`, uris);
 
     const shuffled = shuffleArray(uris);
     await replacePlaylistTracks(playlistId, shuffled, accessToken);
