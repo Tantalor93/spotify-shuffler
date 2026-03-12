@@ -24,11 +24,15 @@ export const authOptions: NextAuthOptions = {
       if (account?.access_token) {
         token.accessToken = account.access_token;
       }
+      if (account?.providerAccountId) {
+        token.spotifyUserId = account.providerAccountId;
+      }
 
       return token;
     },
     async session({ session, token }) {
       session.accessToken = token.accessToken as string | undefined;
+      session.spotifyUserId = token.spotifyUserId as string | undefined;
       return session;
     },
   },

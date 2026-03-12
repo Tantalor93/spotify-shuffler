@@ -18,6 +18,8 @@ export type PlayList = {
     id: string;
     name: string;
     uri: string;
+    collaborative: boolean;
+    owner: { id: string };
     items: { total: number };
 }
 
@@ -26,7 +28,7 @@ type PlayListPage = {
     items: Array<PlayList>;
 }
 
-async function requireSpotifyAccessToken(): Promise<string> {
+async function requireSpotifySession(): Promise<{ accessToken: string; spotifyUserId?: string }> {
     const session = await getServerSession(authOptions);
     const accessToken = session?.accessToken;
 
@@ -34,7 +36,10 @@ async function requireSpotifyAccessToken(): Promise<string> {
         throw new Error('Not authenticated with Spotify.');
     }
 
-    return accessToken;
+    return {
+        accessToken,
+        spotifyUserId: session.spotifyUserId,
+    };
 }
 
 async function fetchAllPlaylistTrackUris(playlistId: string, accessToken: string): Promise<string[]> {
@@ -105,7 +110,7 @@ async function replacePlaylistTracks(playlistId: string, trackUris: string[], ac
 export async function shufflePlaylistAction(playlistId: string) {
     console.log(`Shuffling playlist ${playlistId}`);
 
-    const accessToken = await requireSpotifyAccessToken();
+    const { accessToken } = await requireSpotifySession();
 
     const uris = await fetchAllPlaylistTrackUris(playlistId, accessToken);
 
@@ -117,7 +122,11 @@ export async function shufflePlaylistAction(playlistId: string) {
 }
 
 export async function listUserPlaylistsAction(): Promise<PlayList[]> {
-    const accessToken = await requireSpotifyAccessToken();
+    const { accessToken, spotifyUserId } = await requireSpotifySession();
+
+    if (!spotifyUserId) {
+        throw new Error('Missing Spotify user id in session. Sign in again.');
+    }
 
     const limit = 20;
     let offset = 0;
@@ -140,7 +149,11 @@ export async function listUserPlaylistsAction(): Promise<PlayList[]> {
         }
 
         const page: PlayListPage = await res.json();
-        allItems.push(...page.items);
+        const editablePlaylists = page.items.filter(
+            (playlist) => playlist.owner?.id === spotifyUserId || playlist.collaborative
+        );
+
+        allItems.push(...editablePlaylists);
         total = page.total;
         offset += page.items.length;
 
@@ -152,7 +165,7 @@ export async function listUserPlaylistsAction(): Promise<PlayList[]> {
 }
 
 export async function unfollowPlaylistAction(playlistUri: string) {
-    const accessToken = await requireSpotifyAccessToken();
+    const { accessToken } = await requireSpotifySession();
 
       const res = await fetch(
             `https://api.spotify.com/v1/me/library?uris=${encodeURIComponent(playlistUri)}`,
