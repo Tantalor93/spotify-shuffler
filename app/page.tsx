@@ -9,6 +9,7 @@ import {
   unfollowPlaylistAction,
 } from '@/app/actions/spotify';
 import PlaylistCard from '@/app/ui/playlists/playlist-card';
+import ThemeToggle from '@/app/ui/theme-toggle';
 
 export default function Page() {
   const { data: session, status } = useSession();
@@ -66,6 +67,9 @@ export default function Page() {
   if (status === 'loading') {
     return (
       <main className="max-w-2xl mx-auto p-6">
+        <div className="mb-6 flex justify-end">
+          <ThemeToggle />
+        </div>
         <p>Loading session…</p>
       </main>
     );
@@ -74,9 +78,12 @@ export default function Page() {
   if (status !== 'authenticated') {
     return (
       <main className="max-w-2xl mx-auto p-6">
-        <div className="rounded-xl border border-gray-800 bg-gray-900 p-6">
+        <div className="mb-6 flex justify-end">
+          <ThemeToggle />
+        </div>
+        <div className="rounded-xl border border-border bg-card p-6">
           <h1 className="text-3xl font-bold">My Playlists</h1>
-          <p className="mt-3 text-sm text-gray-400">Sign in to load your Spotify playlists.</p>
+          <p className="mt-3 text-sm text-muted">Sign in to load your Spotify playlists.</p>
           <button
             onClick={() => void signIn('spotify')}
             className="mt-4 rounded-full bg-green-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-green-400"
@@ -91,7 +98,10 @@ export default function Page() {
   if (!accessToken) {
     return (
       <main className="max-w-2xl mx-auto p-6">
-        <p className="text-sm text-gray-400">Missing Spotify access token in session.</p>
+        <div className="mb-6 flex justify-end">
+          <ThemeToggle />
+        </div>
+        <p className="text-sm text-muted">Missing Spotify access token in session.</p>
         <button
           onClick={() => void signIn('spotify')}
           className="mt-4 rounded-full bg-green-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-green-400"
@@ -106,12 +116,15 @@ export default function Page() {
     <main className="max-w-2xl mx-auto p-6">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-3xl font-bold">My Playlists</h1>
-        <button
-          onClick={handleLogout}
-          className="rounded-md border px-3 py-2 text-sm hover:bg-gray-100"
-        >
-          Logout
-        </button>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <button
+            onClick={handleLogout}
+            className="rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-surface-hover"
+          >
+            Logout
+          </button>
+        </div>
       </div>
 
       <div className="space-y-4">

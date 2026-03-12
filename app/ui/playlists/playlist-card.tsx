@@ -39,10 +39,10 @@ export default function PlaylistCard({ playlist, onShuffle, onUnfollow }: Props)
     };
 
     return (
-        <div className="flex items-center justify-between p-4 rounded-xl bg-gray-900 border border-gray-800 hover:border-green-500 transition-colors">
+        <div className="flex items-center justify-between rounded-xl border border-border bg-card p-4 transition-colors hover:border-green-500">
             <div>
-                <h3 className="font-bold text-white">{playlist.name}</h3>
-                <p className="text-sm text-gray-400">{tracksTotal} tracks</p>
+                <h3 className="font-bold text-foreground">{playlist.name}</h3>
+                <p className="text-sm text-muted">{tracksTotal} tracks</p>
             </div>
             <div className="mt-3 flex gap-2">
                 <button
