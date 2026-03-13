@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { signIn, signOut, useSession } from 'next-auth/react';
+import { signIn, useSession } from 'next-auth/react';
 import {
   PlayList,
   shufflePlaylistAction,
@@ -9,15 +9,15 @@ import {
   unfollowPlaylistAction,
 } from '@/app/actions/spotify';
 import PlaylistCard from '@/app/ui/playlists/playlist-card';
-import ThemeToggle from '@/app/ui/theme-toggle';
 
 export default function Page() {
   const { data: session, status } = useSession();
   const [playlists, setPlaylists] = useState<PlayList[]>([]);
   const accessToken = session?.accessToken;
+  const authError = session?.error;
 
   useEffect(() => {
-    if (status !== 'authenticated' || !accessToken) {
+    if (status !== 'authenticated' || !accessToken || authError) {
       return;
     }
 
@@ -31,11 +31,7 @@ export default function Page() {
     };
 
     loadPlaylists();
-  }, [status, accessToken]);
-
-  const handleLogout = () => {
-    void signOut({ callbackUrl: '/' });
-  };
+  }, [status, accessToken, authError]);
 
   const handleShuffle = async (id: string) => {
     try {
@@ -66,10 +62,7 @@ export default function Page() {
 
   if (status === 'loading') {
     return (
-      <main className="max-w-2xl mx-auto p-6">
-        <div className="mb-6 flex justify-end">
-          <ThemeToggle />
-        </div>
+      <main className="max-w-2xl mx-auto px-6 pb-6">
         <p>Loading session…</p>
       </main>
     );
@@ -77,13 +70,9 @@ export default function Page() {
 
   if (status !== 'authenticated') {
     return (
-      <main className="max-w-2xl mx-auto p-6">
-        <div className="mb-6 flex justify-end">
-          <ThemeToggle />
-        </div>
+      <main className="max-w-2xl mx-auto px-6 pb-6">
         <div className="rounded-xl border border-border bg-card p-6">
-          <h1 className="text-3xl font-bold">My Playlists</h1>
-          <p className="mt-3 text-sm text-muted">Sign in to load your Spotify playlists.</p>
+          <p className="text-sm text-muted">Sign in to load your Spotify playlists.</p>
           <button
             onClick={() => void signIn('spotify')}
             className="mt-4 rounded-full bg-green-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-green-400"
@@ -95,12 +84,23 @@ export default function Page() {
     );
   }
 
+  if (authError === 'RefreshAccessTokenError') {
+    return (
+      <main className="max-w-2xl mx-auto px-6 pb-6">
+        <p className="text-sm text-muted">Spotify session expired. Please reconnect.</p>
+        <button
+          onClick={() => void signIn('spotify')}
+          className="mt-4 rounded-full bg-green-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-green-400"
+        >
+          Reconnect Spotify
+        </button>
+      </main>
+    );
+  }
+
   if (!accessToken) {
     return (
-      <main className="max-w-2xl mx-auto p-6">
-        <div className="mb-6 flex justify-end">
-          <ThemeToggle />
-        </div>
+      <main className="max-w-2xl mx-auto px-6 pb-6">
         <p className="text-sm text-muted">Missing Spotify access token in session.</p>
         <button
           onClick={() => void signIn('spotify')}
@@ -113,20 +113,7 @@ export default function Page() {
   }
 
   return (
-    <main className="max-w-2xl mx-auto p-6">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-3xl font-bold">My Playlists</h1>
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
-          <button
-            onClick={handleLogout}
-            className="rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-surface-hover"
-          >
-            Logout
-          </button>
-        </div>
-      </div>
-
+    <main className="max-w-2xl mx-auto px-6 pb-6">
       <div className="space-y-4">
         {playlists.map((pl) => (
           <PlaylistCard

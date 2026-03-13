@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { NextAuthProvider } from "./ui/playlists/nextauthprovider";
 import { ThemeProvider } from "./ui/theme-provider";
+import HeaderControls from "./ui/header-controls";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,6 +32,10 @@ export default function RootLayout({
       >
         <ThemeProvider>
           <NextAuthProvider>
+            <header className="max-w-2xl mx-auto px-6 pt-6 pb-4 flex items-center justify-between">
+              <h1 className="text-xl font-semibold">Spotify Playlist Shuffler</h1>
+              <HeaderControls />
+            </header>
             {children}
           </NextAuthProvider>
         </ThemeProvider>
