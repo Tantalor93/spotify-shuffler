@@ -23,10 +23,23 @@ export type PlayList = {
     items: { total: number };
 }
 
+export type LikedTracksSummary = {
+    total: number;
+};
+
 type PlayListPage = {
     total: number;
     items: Array<PlayList>;
 }
+
+type LikedTracksPage = {
+    total: number;
+    items: Array<{
+        track: {
+            uri: string;
+        };
+    }>;
+};
 
 async function requireSpotifySession(): Promise<{ accessToken: string; spotifyUserId?: string }> {
     const session = await getServerSession(authOptions);
@@ -160,8 +173,81 @@ export async function listUserPlaylistsAction(): Promise<PlayList[]> {
         if (page.items.length === 0) break;
     }
 
-
     return allItems
+}
+
+export async function getLikedTracksSummaryAction(): Promise<LikedTracksSummary> {
+    const { accessToken } = await requireSpotifySession();
+
+    const likedTracksRes = await fetch(
+        'https://api.spotify.com/v1/me/tracks?limit=1',
+        {
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+            },
+            cache: 'no-store',
+        }
+    );
+
+    if (!likedTracksRes.ok) {
+        const body = await likedTracksRes.text();
+        throw new Error(`Spotify ${likedTracksRes.status}: ${body}`);
+    }
+
+    const likedTracksPage = await likedTracksRes.json() as Pick<LikedTracksPage, 'total'>;
+
+    return { total: likedTracksPage.total };
+}
+
+export async function clearLikedTracksAction() {
+    const { accessToken } = await requireSpotifySession();
+
+    const limit = 40;
+
+    while (true) {
+        const listRes = await fetch(
+            `https://api.spotify.com/v1/me/tracks?limit=${limit}&offset=0`,
+            {
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                },
+                cache: 'no-store',
+            }
+        );
+
+        if (!listRes.ok) {
+            throw new Error(`Spotify ${listRes.status}: ${await listRes.text()}`);
+        }
+
+        const page: LikedTracksPage = await listRes.json();
+
+        const uris = page.items.map((item) => item.track.uri);
+
+        if (uris.length === 0) {
+            break;
+        }
+
+        const params = new URLSearchParams();
+        params.set('uris', uris.join(','));
+
+        const deleteRes = await fetch(`https://api.spotify.com/v1/me/library?${params.toString()}`, {
+            method: 'DELETE',
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+            },
+            cache: 'no-store',
+        });
+
+        if (!deleteRes.ok) {
+            const errorBody = await deleteRes.text();
+            if (deleteRes.status === 403) {
+                throw new Error(`Spotify 403 while deleting liked tracks from /v1/me/library: ${errorBody}`);
+            }
+            throw new Error(`Spotify ${deleteRes.status}: ${errorBody}`);
+        }
+    }
+
+    revalidatePath('/');
 }
 
 export async function unfollowPlaylistAction(playlistUri: string) {

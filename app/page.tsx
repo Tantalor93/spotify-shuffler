@@ -6,14 +6,18 @@ import {
   PlayList,
   shufflePlaylistAction,
   listUserPlaylistsAction,
+  getLikedTracksSummaryAction,
   unfollowPlaylistAction,
   copyPlaylistAction,
+  clearLikedTracksAction,
 } from '@/app/actions/spotify';
 import PlaylistCard from '@/app/ui/playlists/playlist-card';
+import LikedTracksCard from '@/app/ui/playlists/liked-tracks-card';
 
 export default function Page() {
   const { data: session, status } = useSession();
   const [playlists, setPlaylists] = useState<PlayList[]>([]);
+  const [likedTracksTotal, setLikedTracksTotal] = useState<number | null>(null);
   const accessToken = session?.accessToken;
   const authError = session?.error;
 
@@ -24,8 +28,12 @@ export default function Page() {
 
     const loadPlaylists = async () => {
       try {
-        const pls = await listUserPlaylistsAction();
+        const [pls, likedTracks] = await Promise.all([
+          listUserPlaylistsAction(),
+          getLikedTracksSummaryAction(),
+        ]);
         setPlaylists(pls);
+        setLikedTracksTotal(likedTracks.total);
       } catch (error) {
         console.error('Loading playlists failed:', error);
       }
@@ -72,6 +80,20 @@ export default function Page() {
       setPlaylists((prev) => [...prev, copied]);
     } catch (error) {
       console.error('Copy failed:', error);
+    }
+  };
+
+  const handleClearLikedTracks = async () => {
+    try {
+      if (!accessToken) {
+        await signIn('spotify');
+        return;
+      }
+
+      await clearLikedTracksAction();
+      setLikedTracksTotal(0);
+    } catch (error) {
+      console.error('Clear liked tracks failed:', error);
     }
   };
 
@@ -130,6 +152,12 @@ export default function Page() {
   return (
     <main className="max-w-2xl mx-auto px-6 pb-6">
       <div className="space-y-4">
+        {likedTracksTotal !== null && (
+          <LikedTracksCard
+            trackTotal={likedTracksTotal}
+            onClearLikedTracks={handleClearLikedTracks}
+          />
+        )}
         {playlists.map((pl) => (
           <PlaylistCard
             key={pl.id}
