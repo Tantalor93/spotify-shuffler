@@ -7,6 +7,7 @@ import {
   shufflePlaylistAction,
   listUserPlaylistsAction,
   unfollowPlaylistAction,
+  copyPlaylistAction,
 } from '@/app/actions/spotify';
 import PlaylistCard from '@/app/ui/playlists/playlist-card';
 
@@ -57,6 +58,20 @@ export default function Page() {
       setPlaylists((prev) => prev.filter((p) => p.id !== playlist.id));
     } catch (error) {
       console.error('Unfollow failed:', error);
+    }
+  };
+
+  const handleCopy = async (playlist: PlayList) => {
+    try {
+      if (!accessToken) {
+        await signIn('spotify');
+        return;
+      }
+
+      const copied = await copyPlaylistAction(playlist.id, playlist.name);
+      setPlaylists((prev) => [...prev, copied]);
+    } catch (error) {
+      console.error('Copy failed:', error);
     }
   };
 
@@ -120,6 +135,7 @@ export default function Page() {
             key={pl.id}
             playlist={pl}
             onShuffle={handleShuffle}
+            onCopy={() => handleCopy(pl)}
             onUnfollow={() => handleUnfollow(pl)}
           />
         ))}

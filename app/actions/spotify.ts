@@ -182,3 +182,58 @@ export async function unfollowPlaylistAction(playlistUri: string) {
             throw new Error(`Spotify ${res.status}: ${body}`);
         }
 }
+
+export async function copyPlaylistAction(sourcePlaylistId: string, sourceName: string): Promise<PlayList> {
+    const { accessToken } = await requireSpotifySession();
+
+    // Fetch all track URIs from the source playlist
+    const trackUris = await fetchAllPlaylistTrackUris(sourcePlaylistId, accessToken);
+
+    // Create a new playlist for the current user
+    const createRes = await fetch(`https://api.spotify.com/v1/me/playlists`, {
+        method: 'POST',
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            name: `${sourceName} (Copy)`,
+            public: false,
+            description: `Copy of ${sourceName}`,
+        }),
+        cache: 'no-store',
+    });
+
+    if (!createRes.ok) {
+        throw new Error(`Spotify ${createRes.status}: ${await createRes.text()}`);
+    }
+
+    const newPlaylist: PlayList & { tracks: { total: number } } = await createRes.json();
+
+    // Add tracks in chunks of 100
+    for (let offset = 0; offset < trackUris.length; offset += 100) {
+        const chunk = trackUris.slice(offset, offset + 100);
+        const addRes = await fetch(`https://api.spotify.com/v1/playlists/${newPlaylist.id}/items`, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ uris: chunk }),
+            cache: 'no-store',
+        });
+
+        if (!addRes.ok) {
+            throw new Error(`Spotify ${addRes.status}: ${await addRes.text()}`);
+        }
+    }
+
+    return {
+        id: newPlaylist.id,
+        name: newPlaylist.name,
+        uri: newPlaylist.uri,
+        collaborative: newPlaylist.collaborative,
+        owner: newPlaylist.owner,
+        items: { total: trackUris.length },
+    };
+}
