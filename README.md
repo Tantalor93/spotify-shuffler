@@ -8,6 +8,8 @@
 * Shuffle Spotify Liked tracks - randomly reorders liked tracks. The liked tracks can only be ordered by insert time, so shuffling liked tracks works by randomly ordering the tracks and inserting them with delay to actually view the liked tracks shuffled
 * Clear the Liked tracks - Spotify provides built-in playlist for the tracks that user likes, but does not provide an easy way to clear this playlist in the mobile apps
 
+![demo](docs/spotify-shuffler-demo.gif)
+
 ## local development
 
 setup env variables in `.env.local`
