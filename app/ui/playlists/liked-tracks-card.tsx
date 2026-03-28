@@ -4,10 +4,12 @@ import { useEffect, useRef, useState } from 'react';
 
 type Props = {
     trackTotal: number;
+    onShuffleLikedTracks: () => void | Promise<void>;
     onClearLikedTracks: () => void | Promise<void>;
 };
 
-export default function LikedTracksCard({ trackTotal, onClearLikedTracks }: Props) {
+export default function LikedTracksCard({ trackTotal, onShuffleLikedTracks, onClearLikedTracks }: Props) {
+    const [shuffling, setShuffling] = useState(false);
     const [clearing, setClearing] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
@@ -22,6 +24,15 @@ export default function LikedTracksCard({ trackTotal, onClearLikedTracks }: Prop
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
+    const handleShuffle = async () => {
+        setShuffling(true);
+        try {
+            await onShuffleLikedTracks();
+        } finally {
+            setShuffling(false);
+        }
+    };
 
     const handleClear = async () => {
         setMenuOpen(false);
@@ -48,39 +59,50 @@ export default function LikedTracksCard({ trackTotal, onClearLikedTracks }: Prop
                 </h3>
                 <p className="text-sm text-muted">
                     {trackTotal} tracks
+                    {shuffling && <span className="ml-2 text-green-500">Shuffling…</span>}
                     {clearing && <span className="ml-2 text-red-400">Clearing…</span>}
                 </p>
             </div>
-            <div className="relative" ref={menuRef}>
+            <div className="flex items-center gap-2">
                 <button
-                    onClick={() => setMenuOpen((o) => !o)}
-                    disabled={clearing}
-                    className="flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted transition hover:bg-surface-hover hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
-                    aria-label="More options"
+                    onClick={handleShuffle}
+                    disabled={shuffling || clearing}
+                    className="rounded-full bg-green-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-green-400 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                    <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
-                        <circle cx="5" cy="12" r="2" />
-                        <circle cx="12" cy="12" r="2" />
-                        <circle cx="19" cy="12" r="2" />
-                    </svg>
+                    {shuffling ? 'Shuffling…' : 'Shuffle'}
                 </button>
 
-                {menuOpen && (
-                    <div className="absolute right-0 top-10 z-10 rounded-xl border border-border bg-card py-1 shadow-lg">
-                        <button
-                            onClick={handleClear}
-                            className="flex items-center gap-2 px-4 py-2 text-sm text-red-400 hover:bg-surface-hover"
-                        >
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-                                <polyline points="3 6 5 6 21 6" />
-                                <path d="M19 6l-1 14H6L5 6" />
-                                <path d="M10 11v6M14 11v6" />
-                                <path d="M9 6V4h6v2" />
-                            </svg>
-                            Clear
-                        </button>
-                    </div>
-                )}
+                <div className="relative" ref={menuRef}>
+                    <button
+                        onClick={() => setMenuOpen((o) => !o)}
+                        disabled={shuffling || clearing}
+                    className="flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted transition hover:bg-surface-hover hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+                    aria-label="More options"
+                    >
+                        <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
+                            <circle cx="5" cy="12" r="2" />
+                            <circle cx="12" cy="12" r="2" />
+                            <circle cx="19" cy="12" r="2" />
+                        </svg>
+                    </button>
+
+                    {menuOpen && (
+                        <div className="absolute right-0 top-10 z-10 rounded-xl border border-border bg-card py-1 shadow-lg">
+                            <button
+                                onClick={handleClear}
+                                className="flex items-center gap-2 px-4 py-2 text-sm text-red-400 hover:bg-surface-hover"
+                            >
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
+                                    <polyline points="3 6 5 6 21 6" />
+                                    <path d="M19 6l-1 14H6L5 6" />
+                                    <path d="M10 11v6M14 11v6" />
+                                    <path d="M9 6V4h6v2" />
+                                </svg>
+                                Clear
+                            </button>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );

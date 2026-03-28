@@ -6,11 +6,14 @@ import {
   PlayList,
   shufflePlaylistAction,
   listUserPlaylistsAction,
-  getLikedTracksSummaryAction,
   unfollowPlaylistAction,
   copyPlaylistAction,
+} from '@/app/actions/playlists';
+import {
+  getLikedTracksSummaryAction,
   clearLikedTracksAction,
-} from '@/app/actions/spotify';
+  shuffleLikedTracksAction,
+} from '@/app/actions/liked-tracks';
 import PlaylistCard from '@/app/ui/playlists/playlist-card';
 import LikedTracksCard from '@/app/ui/playlists/liked-tracks-card';
 
@@ -97,6 +100,19 @@ export default function Page() {
     }
   };
 
+  const handleShuffleLikedTracks = async () => {
+    try {
+      if (!accessToken) {
+        await signIn('spotify');
+        return;
+      }
+
+      await shuffleLikedTracksAction();
+    } catch (error) {
+      console.error('Shuffle liked tracks failed:', error);
+    }
+  };
+
   if (status === 'loading') {
     return (
       <main className="max-w-2xl mx-auto px-6 pb-6">
@@ -155,6 +171,7 @@ export default function Page() {
         {likedTracksTotal !== null && (
           <LikedTracksCard
             trackTotal={likedTracksTotal}
+            onShuffleLikedTracks={handleShuffleLikedTracks}
             onClearLikedTracks={handleClearLikedTracks}
           />
         )}
